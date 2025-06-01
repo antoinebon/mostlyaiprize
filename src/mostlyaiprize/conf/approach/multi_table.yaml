@@ -1,0 +1,18 @@
+# @package _global_
+approach: multi_table
+
+tables:
+  - name: subjects
+    primary_key: ${data.subject_column}
+    tabular_model_configuration:
+      max_training_time: ${training.max_training_time}
+      max_epochs: ${training.max_epochs}
+
+  - name: sequences
+    foreign_keys:
+      - column: ${data.subject_column}
+        referenced_table: subjects
+        is_context: true
+    tabular_model_configuration:
+      max_training_time: ${training.max_training_time}
+      max_epochs: ${training.max_epochs}

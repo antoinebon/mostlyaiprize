@@ -1,0 +1,27 @@
+# Base MOSTLY AI Prize Configuration
+defaults:
+  - approach: single_table
+  - training: standard
+  - _self_
+
+# Generator settings
+generator_name: "challenge2_generator"
+random_seed: 42
+
+# Data settings
+data:
+  path: "data/sequential-training.csv"
+  subject_column: "group_id"  # Column that groups sequences
+
+# Privacy settings
+privacy:
+  enabled: true
+  max_epsilon: 5.0  # Medium privacy level
+  delta: 1e-5
+
+# MLflow
+experiment_name: "mostlyai_challenge2"
+
+# Evaluation
+evaluation:
+  test_size: 1000

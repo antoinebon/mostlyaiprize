@@ -1,0 +1,8 @@
+# @package _global_
+approach: single_table
+
+tables:
+  - name: sequential_data
+    tabular_model_configuration:
+      max_training_time: ${training.max_training_time}
+      max_epochs: ${training.max_epochs}

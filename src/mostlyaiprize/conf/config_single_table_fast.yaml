@@ -1,0 +1,6 @@
+defaults:
+  - base_config
+  - override training: fast
+  - _self_
+
+generator_name: "single_table_fast_generator"

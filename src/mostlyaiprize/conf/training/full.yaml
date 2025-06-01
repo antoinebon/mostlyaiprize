@@ -1,0 +1,4 @@
+# @package _global_
+training:
+  max_training_time: null  # No time limit - maximum quality
+  max_epochs: null

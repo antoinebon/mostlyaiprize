@@ -1,0 +1,8 @@
+defaults:
+  - base_config
+  - override training: debug
+  - _self_
+
+generator_name: "debug_generator"
+privacy:
+  enabled: false  # Disable privacy for faster debugging
