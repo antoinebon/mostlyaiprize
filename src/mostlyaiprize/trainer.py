@@ -55,14 +55,7 @@ class Trainer:
             else:
                 # Use full dataset
                 table_dict['data'] = data
-            
-            # Add privacy settings to tabular model config if enabled
-            if self._config.privacy.enabled and 'tabular_model_configuration' in table_dict:
-                table_dict['tabular_model_configuration']['differential_privacy'] = {
-                    'max_epsilon': self._config.privacy.max_epsilon,
-                    'delta': self._config.privacy.delta,
-                }
-            
+          
             mostly_config['tables'].append(table_dict)
         
         return mostly_config
@@ -78,33 +71,7 @@ class Trainer:
         """
         with mlflow.start_run():
             # Log parameters
-            mlflow.log_params({
-                "dataset_rows": data.shape[0],
-                "dataset_cols": data.shape[1],
-                "approach": self._config.approach,
-                "subject_column": self._config.data.subject_column,
-                "max_training_time": self._config.training.max_training_time,
-                "max_epochs": self._config.training.max_epochs,
-                "privacy_enabled": self._config.privacy.enabled,
-                "generator_name": self._config.generator_name,
-            })
-            
-            # Log data analysis
-            subject_col = self._config.data.subject_column
-            num_subjects = data[subject_col].nunique()
-            avg_sequence_length = len(data) / num_subjects
-            
-            logger.info(f"📊 Dataset analysis:")
-            logger.info(f"   • Total rows: {data.shape[0]:,}")
-            logger.info(f"   • Total columns: {data.shape[1]}")
-            logger.info(f"   • Unique subjects: {num_subjects:,}")
-            logger.info(f"   • Avg sequence length: {avg_sequence_length:.1f}")
-            logger.info(f"🔧 Using {self._config.approach} approach")
-            
-            mlflow.log_metrics({
-                "num_subjects": num_subjects,
-                "avg_sequence_length": avg_sequence_length,
-            })
+            mlflow.log_dict(dict(self._config), "config.json")
             
             # Build MOSTLY AI configuration
             mostly_config = self._build_mostly_config(data)

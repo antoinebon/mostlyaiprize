@@ -2,3 +2,5 @@
 training:
   max_training_time: 0.5  # Fast training (30 minutes)
   max_epochs: 5
+  batch_size: null
+  max_sample_size: null

@@ -5,14 +5,16 @@ tables:
   - name: subjects
     primary_key: ${data.subject_column}
     tabular_model_configuration:
-      max_training_time: ${training.max_training_time}
-      max_epochs: ${training.max_epochs}
+      ${training}:
+      differential_privacy: ${privacy}
 
   - name: sequences
     foreign_keys:
       - column: ${data.subject_column}
         referenced_table: subjects
         is_context: true
-    tabular_model_configuration:
-      max_training_time: ${training.max_training_time}
-      max_epochs: ${training.max_epochs}
+    tabular_model_configuration: 
+      ${training}:
+      smart_imputation: true
+      max_sequence_window: 15
+      differential_privacy: ${privacy}
