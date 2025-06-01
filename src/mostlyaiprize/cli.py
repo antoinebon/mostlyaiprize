@@ -36,16 +36,6 @@ def main(cfg: DictConfig) -> None:
         # Production run
         python -m mostlyaiprize.cli --config-name=config_production
     """
-    logger.info("🚀 Starting Challenge 2 training...")
-    logger.info(f"🔧 Configuration:")
-    logger.info(f"   • Approach: {cfg.approach}")
-    logger.info(f"   • Training time: {cfg.training.max_training_time}")
-    logger.info(f"   • Max epochs: {cfg.training.max_epochs}")
-    logger.info(f"   • Privacy: {'enabled' if cfg.privacy.enabled else 'disabled'}")
-    if cfg.privacy.enabled:
-        logger.info(f"   • Privacy epsilon: {cfg.privacy.max_epsilon}")
-    logger.info(f"   • Subject column: {cfg.data.subject_column}")
-    
     # Load data
     data_file = Path(cfg.data.path)
     if not data_file.exists():
@@ -55,13 +45,7 @@ def main(cfg: DictConfig) -> None:
     logger.info(f"📖 Loading dataset: {data_file}")
     df = pd.read_csv(data_file)
     logger.info(f"✅ Dataset loaded: {df.shape[0]:,} rows × {df.shape[1]} columns")
-    
-    # Validate subject column exists
-    if cfg.data.subject_column not in df.columns:
-        logger.error(f"❌ Subject column '{cfg.data.subject_column}' not found in data")
-        logger.info(f"Available columns: {list(df.columns)}")
-        return
-    
+  
     # Train and evaluate
     trainer = Trainer(cfg)
     trainer.train_and_evaluate(df)
