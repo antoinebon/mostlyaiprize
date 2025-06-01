@@ -2,6 +2,6 @@
 training:
   model: "MOSTLY_AI/Large"
   max_training_time: 0.5  # Fast training (30 minutes)
-  max_epochs: 5
-  batch_size: 1024
+  max_epochs: 1
+  batch_size: null
   gradient_accumulation_steps: 4
