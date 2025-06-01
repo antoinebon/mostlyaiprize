@@ -1,0 +1,14 @@
+# MOSTLY AI Prize Configuration
+privacy_level: medium
+random_seed: 42
+time_budget_hours: 6.0
+
+# Paths
+data_path: "data/sequential-training.csv"
+generator_name: "challenge2_generator"
+
+# MLflow
+experiment_name: "mostlyai_challenge2"
+
+# Evaluation
+test_size: 1000
