@@ -17,6 +17,21 @@ from mostlyaiprize.report_parser import ReportParser
 
 logger = logging.getLogger(__name__)
 
+def flatten_nested(obj, parent_key='', sep='.'):
+    items = {}
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            new_key = f"{parent_key}{sep}{k}" if parent_key else k
+            items.update(flatten_nested(v, new_key, sep=sep))
+    elif isinstance(obj, list):
+        for i, v in enumerate(obj):
+            new_key = f"{parent_key}{sep}{i}" if parent_key else str(i)
+            items.update(flatten_nested(v, new_key, sep=sep))
+    else:
+        items[parent_key] = obj
+    return items
+
+
 
 class Trainer:
     """Simplified trainer for Challenge 2 with config-driven approach."""
@@ -76,6 +91,7 @@ class Trainer:
             # Generate the QA report (provide temporary path for ZIP file)
             logger.info("📋 Generating quality report...")
 
+            # breakpoint()
             with tempfile.TemporaryDirectory() as temp_dir:
                 temp_zip_path = Path(temp_dir) / "quality_report.zip"
                 generator.reports(file_path=str(temp_zip_path), display=False)
@@ -89,12 +105,11 @@ class Trainer:
                     html_content = zip_file.read(html_file_name).decode("utf-8")
 
                 # Save and log the unzipped HTML report
-                with tempfile.NamedTemporaryFile(mode="w", suffix=".html", delete=False) as html_file:
-                    html_file.write(html_content)
-                    html_temp_path = Path(html_file.name)
+                html_file_path = Path(temp_dir) / html_file_name
+                html_file_path.write_text(html_content)
 
                 # Log the HTML file with a descriptive name
-                mlflow.log_artifact(str(html_file_name))
+                mlflow.log_artifact(str(html_file_path))
                 logger.info("📄 HTML report logged to MLflow")
 
                 # Parse metrics from HTML content
@@ -109,14 +124,11 @@ class Trainer:
                 for metric_name, metric_value in metrics.items():
                     logger.info(f"   • {metric_name}: {metric_value}")
 
-                # Clean up temporary HTML file
-                html_temp_path.unlink()
 
         except Exception as e:
             logger.warning(f"⚠️  Failed to extract quality metrics: {e}")
-            return {}
 
-    def train_and_evaluate(self, data: pd.DataFrame) -> dict[str, float]:
+    def train_and_evaluate(self, data: pd.DataFrame):
         """Train generator and evaluate it.
 
         Args:
@@ -127,14 +139,17 @@ class Trainer:
         """
         with mlflow.start_run():
 
+            # Log config
+            config = OmegaConf.to_container(self._config, resolve=True)
+            mlflow.log_dict(config, "config.json")
+                
             # Build MOSTLY AI configuration
             mostly_config = self._build_mostly_config(data)
 
-            # Log parameters
-            mlflow.log_dict(mostly_config, "config.json")
-            for key, value in flatten(mostly_config):
-                mlflow.log_param(key, value)
-                
+            # Log key parameters
+            for table in mostly_config["tables"]:
+                for key, value in flatten(table["tabular_model_configuration"], reducer="underscore").items():
+                    mlflow.log_param(f"{table['name']}_{key}", value)
 
             # Train generator
             logger.info(f"🚀 Training generator: {self._config.generator_name}")
@@ -147,12 +162,18 @@ class Trainer:
             logger.info(f"✅ Training completed in {training_time:.1f}s")
 
             # Extract and log quality metrics
-            quality_metrics = self.extract_and_log_metrics(generator)
+            self.extract_and_log_metrics(generator)
 
             # Display built-in MOSTLY AI reports in UI (if desired)
             logger.info("🔍 Quality report generated and metrics logged to MLflow")
 
-            return quality_metrics
+            # Create submission
+            sd = self._mostly.generate(generator)
+            syn = sd.data()
+            with tempfile.TemporaryDirectory() as temp_dir:
+                temp_path = Path(temp_dir) / "submission.csv.gz"
+                syn["sequences"].to_csv(temp_path, index=False)
+                mlflow.log_artifact(temp_path)
 
 
 __all__ = ["Trainer"]

@@ -20,6 +20,6 @@ tables:
       batch_size:  ${training.batch_size}
       gradient_accumulation_steps:  ${training.gradient_accumulation_steps}
       enable_flexible_generation: false
-      # differential_privacy: ${privacy}
-      # rare_category_replacement_method: null #SAMPLE
+      differential_privacy: ${privacy}
+      # rare_category_replacement_method: SAMPLE
 
