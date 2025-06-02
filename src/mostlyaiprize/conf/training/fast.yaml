@@ -1,7 +1,7 @@
 # @package _global_  
 training:
   model: "MOSTLY_AI/Large"
-  max_training_time: 0.5  # Fast training (30 minutes)
-  max_epochs: 1
-  batch_size: null
-  gradient_accumulation_steps: 4
+  max_training_time: 10  # (in minutes)
+  max_epochs: 5
+  batch_size: 128
+  gradient_accumulation_steps: null
