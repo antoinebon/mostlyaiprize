@@ -2,7 +2,7 @@
 defaults:
   - approach: multi_table
   - training: standard
-  - privacy: balanced
+  - privacy: low
   - _self_
 
 # Generator settings
@@ -16,7 +16,3 @@ data:
 
 # MLflow
 experiment_name: "mostlyai_challenge2"
-
-# Evaluation
-evaluation:
-  test_size: 1000

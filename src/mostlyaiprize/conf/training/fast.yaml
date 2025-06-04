@@ -1,7 +1,9 @@
 # @package _global_  
 training:
-  model: "MOSTLY_AI/Large"
+  model: "MOSTLY_AI/Small"
+  # model: "MOSTLY_AI/Medium"
   max_training_time: null  # (in minutes)
-  max_epochs: 10
-  batch_size: null
+  max_epochs: 100
+  batch_size: 4096
   gradient_accumulation_steps: null
+  max_sample_size: null # 10000

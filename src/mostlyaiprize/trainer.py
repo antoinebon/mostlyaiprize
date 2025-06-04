@@ -13,7 +13,8 @@ from mostlyai.sdk import MostlyAI
 from omegaconf import DictConfig, OmegaConf
 from flatten_dict import flatten
 
-from mostlyaiprize.report_parser import ReportParser
+from .report_parser import ReportParser
+from .features import SubjectTableEngineer
 
 logger = logging.getLogger(__name__)
 
@@ -67,8 +68,7 @@ class Trainer:
             # Handle data assignment based on table name
             if table_config.name == "subjects":
                 # Extract unique subjects
-                subject_col = self._config.data.subject_column
-                subjects_df = data[[subject_col]].drop_duplicates().reset_index(drop=True)
+                subjects_df = SubjectTableEngineer(self._config.data.subject_column).create_enhanced_subject_table(data)
                 table_dict["data"] = subjects_df
             else:
                 # Use full dataset
@@ -101,28 +101,26 @@ class Trainer:
                 # Extract HTML content from ZIP
                 with zipfile.ZipFile(temp_zip_path, "r") as zip_file:
                     # Find HTML files in the ZIP
-                    html_file_name = zip_file.namelist()[0]
-                    html_content = zip_file.read(html_file_name).decode("utf-8")
+                    for html_file_name in zip_file.namelist():
+                        html_content = zip_file.read(html_file_name).decode("utf-8")
 
-                # Save and log the unzipped HTML report
-                html_file_path = Path(temp_dir) / html_file_name
-                html_file_path.write_text(html_content)
+                        # Save and log the unzipped HTML report
+                        html_file_path = Path(temp_dir) / html_file_name
+                        html_file_path.write_text(html_content)
 
-                # Log the HTML file with a descriptive name
-                mlflow.log_artifact(str(html_file_path))
-                logger.info("📄 HTML report logged to MLflow")
+                        # Log the HTML file with a descriptive name
+                        mlflow.log_artifact(str(html_file_path))
+                        logger.info(f"📄 {html_file_name} logged to MLflow")
 
-                # Parse metrics from HTML content
-                parser = ReportParser(html_content)
-                metrics = parser.extract_metrics()
+                        # Parse metrics from HTML content
+                        parser = ReportParser(html_content)
+                        metrics = parser.extract_metrics()
 
-                # Log metrics to MLflow
-                for metric_name, metric_value in metrics.items():
-                    mlflow.log_metric(metric_name, metric_value)
-
-                logger.info("📊 Quality metrics extracted and logged:")
-                for metric_name, metric_value in metrics.items():
-                    logger.info(f"   • {metric_name}: {metric_value}")
+                        # Log metrics to MLflow
+                        for metric_name, metric_value in metrics.items():
+                            full_metric_name = "_".join((html_file_name.split('-')[0], metric_name))
+                            mlflow.log_metric(full_metric_name, metric_value)
+                            logger.info(f"   • {full_metric_name}: {metric_value}")
 
 
         except Exception as e:
@@ -171,7 +169,7 @@ class Trainer:
             sd = self._mostly.generate(generator)
             syn = sd.data()
             with tempfile.TemporaryDirectory() as temp_dir:
-                temp_path = Path(temp_dir) / "submission.csv.gz"
+                temp_path = Path(temp_dir) / "generated_sequences.csv.gz"
                 syn["sequences"].to_csv(temp_path, index=False)
                 mlflow.log_artifact(temp_path)
 
