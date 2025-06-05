@@ -23,5 +23,3 @@ feature_engineering:
   enable_entropy: true        
   enable_correlations: true   
 
-# MLflow
-experiment_name: "mostlyai_challenge2"
