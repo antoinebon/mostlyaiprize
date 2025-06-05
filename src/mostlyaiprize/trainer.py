@@ -68,7 +68,10 @@ class Trainer:
             # Handle data assignment based on table name
             if table_config.name == "subjects":
                 # Extract unique subjects
+                t0 = time.time()
                 subjects_df = SubjectTableEngineer(self._config.data.subject_column).create_enhanced_subject_table(data)
+                t1 = time.time()-t0
+                print(t1)
                 table_dict["data"] = subjects_df
             else:
                 # Use full dataset
