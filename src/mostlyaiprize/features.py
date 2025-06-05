@@ -1,6 +1,7 @@
 """Enhanced subject table creation with feature engineering using Polars."""
 
 import polars as pl
+import pandas as pd
 import numpy as np
 import warnings
 from typing import Any
@@ -305,9 +306,15 @@ class SubjectTableEngineer:
             col_data = group_df.select(numerical_cols)
             argmax_indices = []
             for row in col_data.iter_rows():
-                max_val = max(row)
-                max_idx = next(i for i, val in enumerate(row) if val == max_val)
+                # Filter out None values
+                valid_vals = [(i, val) for i, val in enumerate(row) if val is not None]
+                if not valid_vals:
+                    continue  # Skip rows with all None values
+                max_idx, max_val = max(valid_vals, key=lambda x: x[1])
                 argmax_indices.append(numerical_cols[max_idx])
+            
+            if not argmax_indices:
+                return numerical_cols[0], 1.0
             
             from collections import Counter
             counts = Counter(argmax_indices)
@@ -329,18 +336,20 @@ class SubjectTableEngineer:
         
         return base_result.join(dominance_df, on=self._subject_column)
     
-    def create_enhanced_subject_table(self, data: pl.DataFrame) -> pl.DataFrame:
+    def create_enhanced_subject_table(self, data: pl.DataFrame | pd.DataFrame) -> pd.DataFrame:
         """Create enhanced subject table with aggregated features.
         
         Args:
-            data: Sequential data with subject identifiers (Polars DataFrame)
+            data: Sequential data with subject identifiers (Polars or Pandas DataFrame)
             
         Returns:
-            Enhanced subject table with one row per subject
+            Enhanced subject table with one row per subject (Pandas DataFrame)
         """
-        # Ensure it's a Polars DataFrame
-        if not isinstance(data, pl.DataFrame):
-            raise TypeError("Input data must be a Polars DataFrame")
+        # Convert pandas to polars if needed
+        if isinstance(data, pd.DataFrame):
+            data = pl.from_pandas(data)
+        elif not isinstance(data, pl.DataFrame):
+            raise TypeError("Input data must be a Polars or Pandas DataFrame")
         
         # Basic sequence length
         subject_table = data.group_by(self._subject_column).agg([
@@ -427,7 +436,8 @@ class SubjectTableEngineer:
                     (pl.col(f"{col}_is_increasing") | pl.col(f"{col}_is_decreasing")).alias(f"{col}_is_monotonic")
                 ])
         
-        return subject_table
+        # Convert back to pandas before returning
+        return subject_table.to_pandas()
 
 
 __all__ = ["SubjectTableEngineer"]

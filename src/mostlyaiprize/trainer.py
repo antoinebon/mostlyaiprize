@@ -72,6 +72,7 @@ class Trainer:
                 subjects_df = SubjectTableEngineer(self._config.data.subject_column).create_enhanced_subject_table(data)
                 t1 = time.time()-t0
                 print(t1)
+                breakpoint()
                 table_dict["data"] = subjects_df
             else:
                 # Use full dataset
