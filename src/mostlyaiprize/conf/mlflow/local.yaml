@@ -1,0 +1,5 @@
+mlflow:
+  tracking_uri: null
+  experiment_name: "mostlyai_challenge2_local"
+  enable_system_metrics: true
+  registry_uri: null

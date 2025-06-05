@@ -3,6 +3,7 @@ defaults:
   - approach: multi_table
   - training: standard
   - privacy: low
+  - mlflow: local
   - _self_
 
 # Generator settings
@@ -13,6 +14,14 @@ random_seed: 42
 data:
   path: "data/sequential-training.csv"
   subject_column: "group_id"  # Column that groups sequences
+
+# Feature engineering settings for subject table creation
+feature_engineering:
+  enable_sequential: true     
+  enable_distribution: true   
+  enable_cross_column: true   
+  enable_entropy: true        
+  enable_correlations: true   
 
 # MLflow
 experiment_name: "mostlyai_challenge2"

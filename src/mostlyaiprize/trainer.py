@@ -18,21 +18,6 @@ from .features import SubjectTableEngineer
 
 logger = logging.getLogger(__name__)
 
-def flatten_nested(obj, parent_key='', sep='.'):
-    items = {}
-    if isinstance(obj, dict):
-        for k, v in obj.items():
-            new_key = f"{parent_key}{sep}{k}" if parent_key else k
-            items.update(flatten_nested(v, new_key, sep=sep))
-    elif isinstance(obj, list):
-        for i, v in enumerate(obj):
-            new_key = f"{parent_key}{sep}{i}" if parent_key else str(i)
-            items.update(flatten_nested(v, new_key, sep=sep))
-    else:
-        items[parent_key] = obj
-    return items
-
-
 
 class Trainer:
     """Simplified trainer for Challenge 2 with config-driven approach."""
@@ -46,8 +31,41 @@ class Trainer:
         self._config: DictConfig = config
         self._mostly: MostlyAI = MostlyAI(local=True)
 
-        # Setup MLflow
-        mlflow.set_experiment(config.experiment_name)
+        # Setup MLflow with configuration
+        self._setup_mlflow()
+
+    def _setup_mlflow(self) -> None:
+        """Configure MLflow tracking with settings from configuration."""
+        # Handle both old and new config formats
+        if hasattr(self._config, 'mlflow'):
+            mlflow_config = self._config.mlflow
+            
+            # Set tracking URI if specified
+            if hasattr(mlflow_config, 'tracking_uri') and mlflow_config.tracking_uri is not None:
+                mlflow.set_tracking_uri(mlflow_config.tracking_uri)
+                logger.info(f"📊 MLflow tracking URI: {mlflow_config.tracking_uri}")
+            else:
+                logger.info("📊 MLflow using default local tracking")
+            
+            # Set registry URI if specified
+            if hasattr(mlflow_config, 'registry_uri') and mlflow_config.registry_uri is not None:
+                mlflow.set_registry_uri(mlflow_config.registry_uri)
+                logger.info(f"📋 MLflow registry URI: {mlflow_config.registry_uri}")
+            
+            # Enable system metrics if requested
+            if hasattr(mlflow_config, 'enable_system_metrics') and mlflow_config.enable_system_metrics:
+                mlflow.enable_system_metrics_logging()
+                logger.info("📈 MLflow system metrics logging enabled")
+            
+            # Set experiment
+            experiment_name = mlflow_config.experiment_name
+        else:
+            # Fallback to old config format
+            experiment_name = self._config.experiment_name
+            logger.info("📊 MLflow using default local tracking")
+        
+        mlflow.set_experiment(experiment_name)
+        logger.info(f"🔬 MLflow experiment: {experiment_name}")
 
     def _build_mostly_config(self, data: pd.DataFrame) -> dict[str, Any]:
         """Build MOSTLY AI configuration from Hydra config and data.
@@ -59,20 +77,38 @@ class Trainer:
             MOSTLY AI configuration dict
         """
         # Start with base generator config
-        mostly_config = {"name": self._config.generator_name, "tables": []}
+        mostly_config: dict[str, Any] = {"name": self._config.generator_name, "tables": []}
 
         # Process each table configuration from approach config
         for table_config in self._config.tables:
-            table_dict = OmegaConf.to_container(table_config, resolve=True)
+            table_dict: dict[str, Any] = OmegaConf.to_container(table_config, resolve=True)
 
             # Handle data assignment based on table name
             if table_config.name == "subjects":
-                # Extract unique subjects
-                t0 = time.time()
-                subjects_df = SubjectTableEngineer(self._config.data.subject_column).create_enhanced_subject_table(data)
-                t1 = time.time()-t0
-                print(t1)
-                breakpoint()
+                # Extract unique subjects with configured feature engineering
+                t0: float = time.time()
+                
+                # Create engineer with configuration-driven parameters
+                if hasattr(self._config, 'feature_engineering'):
+                    feature_config = self._config.feature_engineering
+                    engineer = SubjectTableEngineer(
+                        subject_column=self._config.data.subject_column,
+                        enable_sequential=feature_config.get('enable_sequential', True),
+                        enable_distribution=feature_config.get('enable_distribution', True),
+                        enable_cross_column=feature_config.get('enable_cross_column', True),
+                        enable_entropy=feature_config.get('enable_entropy', False),
+                        enable_correlations=feature_config.get('enable_correlations', True)
+                    )
+                else:
+                    # Fallback to defaults if no feature_engineering config
+                    engineer = SubjectTableEngineer(
+                        subject_column=self._config.data.subject_column
+                    )
+                
+                subjects_df: pd.DataFrame = engineer.create_enhanced_subject_table(data)
+                t1: float = time.time() - t0
+                logger.info(f"📊 Subject table engineering completed in {t1:.1f}s - {subjects_df.shape[1]} features created")
+                
                 table_dict["data"] = subjects_df
             else:
                 # Use full dataset
@@ -87,17 +123,13 @@ class Trainer:
 
         Args:
             generator: Trained MOSTLY AI generator
-
-        Returns:
-            Extracted quality metrics
         """
         try:
             # Generate the QA report (provide temporary path for ZIP file)
             logger.info("📋 Generating quality report...")
 
-            # breakpoint()
             with tempfile.TemporaryDirectory() as temp_dir:
-                temp_zip_path = Path(temp_dir) / "quality_report.zip"
+                temp_zip_path: Path = Path(temp_dir) / "quality_report.zip"
                 generator.reports(file_path=str(temp_zip_path), display=False)
 
                 logger.info(f"📄 Report generated at: {temp_zip_path}")
@@ -106,10 +138,10 @@ class Trainer:
                 with zipfile.ZipFile(temp_zip_path, "r") as zip_file:
                     # Find HTML files in the ZIP
                     for html_file_name in zip_file.namelist():
-                        html_content = zip_file.read(html_file_name).decode("utf-8")
+                        html_content: str = zip_file.read(html_file_name).decode("utf-8")
 
                         # Save and log the unzipped HTML report
-                        html_file_path = Path(temp_dir) / html_file_name
+                        html_file_path: Path = Path(temp_dir) / html_file_name
                         html_file_path.write_text(html_content)
 
                         # Log the HTML file with a descriptive name
@@ -118,40 +150,45 @@ class Trainer:
 
                         # Parse metrics from HTML content
                         parser = ReportParser(html_content)
-                        metrics = parser.extract_metrics()
+                        metrics: dict[str, float] = parser.extract_metrics()
 
                         # Log metrics to MLflow
                         for metric_name, metric_value in metrics.items():
-                            full_metric_name = "_".join((html_file_name.split('-')[0], metric_name))
+                            full_metric_name: str = "_".join((html_file_name.split('-')[0], metric_name))
                             mlflow.log_metric(full_metric_name, metric_value)
                             logger.info(f"   • {full_metric_name}: {metric_value}")
-
 
         except Exception as e:
             logger.warning(f"⚠️  Failed to extract quality metrics: {e}")
 
-    def train_and_evaluate(self, data: pd.DataFrame):
+    def train_and_evaluate(self, data: pd.DataFrame) -> None:
         """Train generator and evaluate it.
 
         Args:
             data: Training data
-
-        Returns:
-            Evaluation metrics from MOSTLY AI QA report
         """
         with mlflow.start_run():
 
             # Log config
-            config = OmegaConf.to_container(self._config, resolve=True)
+            config: dict[str, Any] = OmegaConf.to_container(self._config, resolve=True)
             mlflow.log_dict(config, "config.json")
                 
             # Build MOSTLY AI configuration
-            mostly_config = self._build_mostly_config(data)
+            mostly_config: dict[str, Any] = self._build_mostly_config(data)
 
             # Log key parameters
             for table in mostly_config["tables"]:
                 for key, value in flatten(table["tabular_model_configuration"], reducer="underscore").items():
                     mlflow.log_param(f"{table['name']}_{key}", value)
+
+            # Log feature engineering parameters
+            for param_name, param_value in config.get("feature_engineering", {}).items():
+                mlflow.log_param(f"feature_engineering_{param_name}", param_value)
+                logger.info(f"📈 Feature engineering - {param_name}: {param_value}")
+
+            # Log MLflow configuration parameters
+            for param_name, param_value in config.get("mlflow", {}).items():
+                mlflow.log_param(f"mlflow_{param_name}", param_value)
 
             # Train generator
             logger.info(f"🚀 Training generator: {self._config.generator_name}")
@@ -171,9 +208,9 @@ class Trainer:
 
             # Create submission
             sd = self._mostly.generate(generator)
-            syn = sd.data()
+            syn: dict[str, pd.DataFrame] = sd.data()
             with tempfile.TemporaryDirectory() as temp_dir:
-                temp_path = Path(temp_dir) / "generated_sequences.csv.gz"
+                temp_path: Path = Path(temp_dir) / "generated_sequences.csv.gz"
                 syn["sequences"].to_csv(temp_path, index=False)
                 mlflow.log_artifact(temp_path)
 

@@ -33,8 +33,14 @@ def main(cfg: DictConfig) -> None:
         # Override privacy settings
         python -m mostlyaiprize.cli privacy.enabled=false privacy.max_epsilon=10.0
         
-        # Production run
-        python -m mostlyaiprize.cli --config-name=config_production
+        # Override feature engineering settings
+        python -m mostlyaiprize.cli feature_engineering.enable_entropy=true feature_engineering.enable_correlations=false
+        
+        # Configure MLflow tracking
+        python -m mostlyaiprize.cli mlflow.tracking_uri="http://localhost:5000" mlflow.experiment_name="my_experiment"
+        
+        # Production run with remote MLflow
+        python -m mostlyaiprize.cli --config-name=config_production mlflow.tracking_uri="https://mlflow.example.com"
     """
     # Load data
     data_file = Path(cfg.data.path)
@@ -43,7 +49,7 @@ def main(cfg: DictConfig) -> None:
         return
     
     logger.info(f"📖 Loading dataset: {data_file}")
-    df = pd.read_csv(data_file)
+    df: pd.DataFrame = pd.read_csv(data_file)
     logger.info(f"✅ Dataset loaded: {df.shape[0]:,} rows × {df.shape[1]} columns")
   
     # Train and evaluate
