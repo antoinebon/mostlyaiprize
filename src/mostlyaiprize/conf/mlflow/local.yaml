@@ -1,6 +1,0 @@
-# @package _global_  
-mlflow:
-  tracking_uri: null
-  experiment_name: "mostlyai_challenge2"
-  enable_system_metrics: true
-  registry_uri: null

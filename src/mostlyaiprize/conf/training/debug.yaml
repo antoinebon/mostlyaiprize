@@ -1,4 +1,0 @@
-# @package _global_
-training:
-  max_training_time: 0.1  # Very fast for debugging (6 minutes)
-  max_epochs: 1

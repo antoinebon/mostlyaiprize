@@ -1,4 +1,0 @@
-# @package _global_
-training:
-  max_training_time: 2.0  # Standard training (2 hours)
-  max_epochs: null  # Let MOSTLY AI decide

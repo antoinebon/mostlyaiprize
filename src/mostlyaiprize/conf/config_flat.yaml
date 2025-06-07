@@ -1,0 +1,31 @@
+defaults:
+  - base_config
+  - _self_
+
+# Challenge identification
+challenge_type: "flat"
+generator_name: "flat_challenge_generator"
+
+# Override MLflow experiment name for flat challenge
+mlflow:
+  experiment_name: "mostlyai_flat_challenge"
+
+# Data settings
+data:
+  path: "data/flat-training.csv"
+
+# Approach: single table for flat data
+approach: flat_table
+
+tables:
+  - name: flat_data
+    tabular_model_configuration:
+      model: "MOSTLY_AI/Medium"
+      max_epochs: 1000
+      max_training_time: 300  # 5 hours
+      batch_size: 8192
+      gradient_accumulation_steps: null
+      max_sample_size: null
+      enable_flexible_generation: false
+      value_protection: true
+      rare_category_replacement_method: SAMPLE

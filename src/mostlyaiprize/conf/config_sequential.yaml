@@ -1,0 +1,56 @@
+# Configuration for sequential data challenge
+defaults:
+  - base_config
+  - _self_
+
+# Challenge identification
+challenge_type: "sequential"
+generator_name: "sequential_challenge_generator"
+
+# Override MLflow experiment name for sequential challenge
+mlflow:
+  experiment_name: "mostlyai_sequential_challenge"
+
+# Data settings
+data:
+  path: "data/sequential-training.csv"
+  subject_column: "group_id"
+
+# Approach: multi-table for sequential data
+approach: multi_table
+
+tables:
+  - name: subjects
+    primary_key: ${data.subject_column}
+    tabular_model_configuration:
+      model: "MOSTLY_AI/Medium"
+      max_epochs: 1000
+      max_training_time: 120  # 2 hours
+      batch_size: 1024
+      gradient_accumulation_steps: null
+      enable_flexible_generation: false
+      value_protection: true
+
+  - name: sequences
+    foreign_keys:
+      - column: ${data.subject_column}
+        referenced_table: subjects
+        is_context: true
+    tabular_model_configuration:
+      max_sequence_length: 15
+      model: "MOSTLY_AI/Large"
+      max_epochs: 1000
+      max_training_time: 120  # 2 hours
+      batch_size: 256
+      gradient_accumulation_steps: null
+      max_sample_size: null
+      enable_flexible_generation: false
+      value_protection: true
+
+# Feature engineering settings for subject table creation
+feature_engineering:
+  enable_sequential: true     
+  enable_distribution: true   
+  enable_cross_column: true   
+  enable_entropy: true        
+  enable_correlations: true

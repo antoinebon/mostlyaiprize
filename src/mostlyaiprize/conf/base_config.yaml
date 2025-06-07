@@ -1,25 +1,14 @@
-# Base MOSTLY AI Prize Configuration
 defaults:
-  - approach: multi_table
-  - training: standard
-  - privacy: low
-  - mlflow: local
   - _self_
+  - override hydra/hydra_logging: disabled
+  - override hydra/job_logging: disabled 
 
-# Generator settings
-generator_name: "challenge2_generator"
+# Common settings
 random_seed: 42
 
-# Data settings
-data:
-  path: "data/sequential-training.csv"
-  subject_column: "group_id"  # Column that groups sequences
-
-# Feature engineering settings for subject table creation
-feature_engineering:
-  enable_sequential: true     
-  enable_distribution: true   
-  enable_cross_column: true   
-  enable_entropy: true        
-  enable_correlations: true   
-
+# MLflow settings  
+mlflow:
+  tracking_uri: null
+  experiment_name: "mostlyai_challenge"
+  enable_system_metrics: true
+  registry_uri: null
