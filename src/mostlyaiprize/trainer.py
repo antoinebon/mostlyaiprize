@@ -215,7 +215,7 @@ class Trainer:
             logger.info(f"🚀 Training generator: {self._config.generator_name}")
 
             start_time: float = time.time()
-            generator = self._mostly.train(config=mostly_config, start=True, wait=True)
+            generator = self._mostly.train(config=mostly_config, start=True, wait=True, progress_bar=False)
             training_time: float = time.time() - start_time
 
             mlflow.log_metric("training_time_seconds", training_time)
@@ -227,22 +227,22 @@ class Trainer:
             # Display built-in MOSTLY AI reports in UI (if desired)
             logger.info("🔍 Quality report generated and metrics logged to MLflow")
 
-            # Create submission
-            sd = self._mostly.generate(generator)
-            syn: dict[str, pd.DataFrame] = sd.data()
+            if self._config.get("generate_data", True):
+                # Create submission
+                syn = self._mostly.generate(generator).data()
             
-            with tempfile.TemporaryDirectory() as temp_dir:
-                if self._challenge_type == 'sequential':
-                    # Sequential data submission
-                    temp_path: Path = Path(temp_dir) / "generated_sequences.csv.gz"
-                    syn["sequences"].to_csv(temp_path, index=False)
-                else:
-                    # Flat data submission
-                    temp_path: Path = Path(temp_dir) / "generated_flat_data.csv.gz"
-                    syn.to_csv(temp_path, index=False)
+                with tempfile.TemporaryDirectory() as temp_dir:
+                    if self._challenge_type == 'sequential':
+                        # Sequential data submission
+                        temp_path: Path = Path(temp_dir) / "generated_sequences.csv.gz"
+                        syn["sequences"].to_csv(temp_path, index=False)
+                    else:
+                        # Flat data submission
+                        temp_path: Path = Path(temp_dir) / "generated_flat_data.csv.gz"
+                        syn.to_csv(temp_path, index=False)
                 
-                mlflow.log_artifact(temp_path)
-                logger.info(f"💾 Generated data saved: {temp_path.name}")
+                    mlflow.log_artifact(temp_path)
+                    logger.info(f"💾 Generated data saved: {temp_path.name}")
 
 
 __all__ = ["Trainer"]

@@ -20,12 +20,59 @@ approach: flat_table
 tables:
   - name: flat_data
     tabular_model_configuration:
-      model: "MOSTLY_AI/Medium"
+      model: "MOSTLY_AI/Small"
       max_epochs: 1000
       max_training_time: 300  # 5 hours
-      batch_size: 8192
+      batch_size: 512
       gradient_accumulation_steps: null
-      max_sample_size: null
+      max_sample_size: 10000
       enable_flexible_generation: false
       value_protection: true
-      rare_category_replacement_method: SAMPLE
+      # rare_category_replacement_method: SAMPLE
+
+      # Learning Rate Enhancements
+      use_warmup_cosine: true
+      warmup_epochs: 5
+      min_lr_ratio: 0.01
+      use_cosine_restarts: false
+      restart_period: 20
+      restart_mult: 2
+  
+      # Advanced Regularization
+      gradient_clip_norm: null # Set to null to disable
+      # gradient_clip_norm: 1.0  # Set to null to disable
+      weight_decay_schedule: true
+      initial_weight_decay: 0.01
+      final_weight_decay: 0.001
+  
+      # Loss Function Enhancements
+      use_focal_loss: false
+      focal_alpha: 1.0
+      focal_gamma: 2.0
+      label_smoothing: 0.05
+  
+      # Sequence Sampling Enhancements (mainly for sequential, but available)
+      adaptive_sampling: false  # Not as relevant for flat data
+      difficulty_progression: 0.001
+  
+      # Optimizer Enhancements  
+      use_lookahead: false
+      lookahead_k: 5
+      lookahead_alpha: 0.5
+      adaptive_betas: true
+      beta1_schedule: [0.9, 0.95]  # [initial, final]
+      beta2_schedule: [0.999, 0.99]  # [initial, final]
+  
+      # Adaptive Batch Size Strategy
+      adaptive_batch_size: false
+      batch_size_strategy: "gradient_noise"  # Options: "gradient_noise", "loss_variance", "conservative"
+      batch_size_growth_factor: 1.2
+      batch_size_shrink_factor: 0.8
+      min_batch_size: 8
+      max_batch_size: 2048
+      gradient_noise_threshold: 0.1
+      batch_adaptation_patience: 10
+  
+      # Mixed Precision Training
+      use_mixed_precision: false  # Enable for larger effective batch sizes
+      mixed_precision_opt_level: "O1"  # O0, O1, O2, O3
