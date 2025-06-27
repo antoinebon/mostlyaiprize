@@ -12,6 +12,7 @@ from mostlyaiprize.trainer import Trainer
 level = logging.DEBUG
 logging.basicConfig(level=level)
 logging.getLogger("mostlyai").setLevel(level)
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 

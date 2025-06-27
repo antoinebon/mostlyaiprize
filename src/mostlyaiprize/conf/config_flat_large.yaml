@@ -21,9 +21,9 @@ tables:
   - name: flat_data
     tabular_model_configuration:
       # Core Configuration
-      model: "MOSTLY_AI/Large"
+      model: "MOSTLY_AI/Small"
       max_epochs: 400
-      max_training_time: 300  # 5 hours
+      max_training_time: 360  # 6 hours
       max_sample_size: null
       enable_flexible_generation: false
       
@@ -35,11 +35,11 @@ tables:
       gradient_clip_norm: null
       
       # Learning rate auto-determined by heuristic for optimal convergence
-      learning_rate: 0.01
+      learning_rate: 0.003
       
       # Warmup + Cosine scheduler with longer warmup for stability
-      # scheduler_type: "warmup_cosine"
-      scheduler_type: "plateau"
+      scheduler_type: "warmup_cosine"
+      # scheduler_type: "plateau"
       # scheduler_type: "one_cycle"
       warmup_epochs: 10
       min_lr_ratio: 0.0001
@@ -50,7 +50,7 @@ tables:
       weight_decay_end: 0.01  # Automatically computed as weight_decay * 0.1 if not specified
       
       # More aggressive label smoothing for high precision
-      label_smoothing: 0.0
+      label_smoothing: 0
       
       # EMA enabled with slower decay for more stable weights
       use_ema: false
@@ -58,7 +58,7 @@ tables:
       ema_decay: 0.99      
 
       # Enhanced early stopping with more patience for convergence
-      early_stopping_patience: 10
+      early_stopping_patience: 400
       early_stopping_min_delta: 0.0001
       
       # Focal loss disabled (only enable for severe class imbalance)
@@ -70,10 +70,6 @@ tables:
       value_protection: null
       rare_category_replacement_method: null
       
-      # Advanced batch configuration
-      batch_size: 256
+      # Batch size
+      batch_size: 1024 # Auto-determined based on memory and model size
       gradient_accumulation_steps: null  # Auto-determined
-
-      # dropout
-      dnn_dropout: 0.1
-      lstm_dropout: 0

@@ -9,6 +9,7 @@ generator_name: "sequential_challenge_generator"
 
 # Override MLflow experiment name for sequential challenge
 mlflow:
+  # experiment_name: "mostlyai_sequential_challenge_dev"
   experiment_name: "mostlyai_sequential_challenge"
 
 # Data settings
@@ -23,13 +24,57 @@ tables:
   - name: subjects
     primary_key: ${data.subject_column}
     tabular_model_configuration:
-      model: "MOSTLY_AI/Medium"
-      max_epochs: 1000
-      max_training_time: 120  # 2 hours
-      batch_size: 1024
-      gradient_accumulation_steps: null
+      model: "MOSTLY_AI/Small"
+      max_epochs: 100
+      max_training_time: 360  # 6 hours
+      max_sample_size: null
       enable_flexible_generation: false
+      
+      # Mixed precision disabled for maximum numerical precision
+      use_mixed_precision: false
+      
+      # Tighter gradient clipping for stability
+      gradient_clip_norm: null
+      
+      # Learning rate
+      learning_rate: 0.003
+      
+      # Warmup + Cosine scheduler with longer warmup for stability
+      scheduler_type: "warmup_cosine"
+      # scheduler_type: "plateau"
+      # scheduler_type: "one_cycle"
+      warmup_epochs: 10
+      min_lr_ratio: 0.0001
+      
+      # Conservative regularization for better generalization
+      # weight_decay: 0
+      weight_decay: 0.1
+      weight_decay_end: 0.1  # Automatically computed as weight_decay * 0.1 if not specified
+      
+      # More aggressive label smoothing for high precision
+      label_smoothing: 0
+      
+      # EMA enabled with slower decay for more stable weights
+      use_ema: false
+      # ema_decay: 0.99995
+      ema_decay: 0.99      
+
+      # Enhanced early stopping with more patience for convergence
+      early_stopping_patience: 400
+      early_stopping_min_delta: 0.0001
+      
+      # Focal loss disabled (only enable for severe class imbalance)
+      use_focal_loss: false
+      focal_alpha: 1.0
+      focal_gamma: 2.0
+      
+      # Data protection settings
       value_protection: true
+      rare_category_replacement_method: CONSTANT
+      
+      # Batch configuration
+      batch_size: 128
+      gradient_accumulation_steps: null 
 
   - name: sequences
     foreign_keys:
@@ -37,20 +82,65 @@ tables:
         referenced_table: subjects
         is_context: true
     tabular_model_configuration:
-      max_sequence_length: 15
-      model: "MOSTLY_AI/Large"
-      max_epochs: 1000
-      max_training_time: 120  # 2 hours
-      batch_size: 256
-      gradient_accumulation_steps: null
-      max_sample_size: null
+      model: "MOSTLY_AI/Small"
+      max_epochs: 100
+      max_training_time: 360  # 6 hours
+      # max_sample_size: 1000
+      max_sequence_window: 15
       enable_flexible_generation: false
-      value_protection: true
+      
+      # Mixed precision disabled for maximum numerical precision
+      use_mixed_precision: false
+      
+      # Tighter gradient clipping for stability
+      gradient_clip_norm: 1
+      
+      # Learning rate
+      learning_rate: 0.001
+      
+      # Warmup + Cosine scheduler with longer warmup for stability
+      # scheduler_type: "warmup_cosine"
+      # scheduler_type: "plateau"
+      scheduler_type: "one_cycle"
+      warmup_epochs: 10
+      min_lr_ratio: 0.0001
+      
+      # Conservative regularization for better generalization
+      # weight_decay: 0
+      weight_decay: 0.001
+      weight_decay_end: 0.001 # Automatically computed as weight_decay * 0.1 if not specified
+      
+      # More aggressive label smoothing for high precision
+      label_smoothing: 0
+      
+      # EMA enabled with slower decay for more stable weights
+      use_ema: false
+      # ema_decay: 0.99995
+      ema_decay: 0.99      
 
+      # Enhanced early stopping with more patience for convergence
+      early_stopping_patience: 20
+      early_stopping_min_delta: 0.0001
+      
+      # Focal loss disabled (only enable for severe class imbalance)
+      use_focal_loss: false
+      focal_alpha: 1.0
+      focal_gamma: 2.0
+      
+      # Data protection settings
+      value_protection: true
+      rare_category_replacement_method: CONSTANT
+      
+      # Batch configuration
+      batch_size: 64
+      gradient_accumulation_steps: null 
+
+      dnn_dropout: 0.1
+      lstm_dropout: 0.0
 # Feature engineering settings for subject table creation
-feature_engineering:
-  enable_sequential: true     
-  enable_distribution: true   
-  enable_cross_column: true   
-  enable_entropy: true        
-  enable_correlations: true
+# subjects_feature_engineering:
+#   enable_sequential: false     
+#   enable_distribution: true   
+#   enable_cross_column: false   
+#   enable_entropy: false        
+#   enable_correlations: false

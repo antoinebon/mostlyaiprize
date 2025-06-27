@@ -386,7 +386,7 @@ class SubjectTableEngineer:
 
         return base_result.join(dominance_df, on=self._subject_column)
 
-    def create_enhanced_subject_table(self, data: pl.DataFrame | pd.DataFrame) -> pd.DataFrame:
+    def create_enhanced_subject_table(self, data: pd.DataFrame) -> pd.DataFrame:
         """Create enhanced subject table with aggregated features.
 
         Args:
@@ -396,10 +396,7 @@ class SubjectTableEngineer:
             Enhanced subject table with one row per subject (Pandas DataFrame)
         """
         # Convert pandas to polars if needed
-        if isinstance(data, pd.DataFrame):
-            data = pl.from_pandas(data)
-        elif not isinstance(data, pl.DataFrame):
-            raise TypeError("Input data must be a Polars or Pandas DataFrame")
+        data = pl.from_pandas(data)
 
         # Basic sequence length
         subject_table = data.group_by(self._subject_column).agg([pl.len().alias("sequence_length")])
