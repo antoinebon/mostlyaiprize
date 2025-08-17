@@ -13,22 +13,21 @@ authors = [
 ]
 dependencies = [
   # Core data manipulation
-  "pandas>=2.0.0",
-  "numpy>=1.24.0",
+  "pandas",
+  "numpy",
+  "polars",
   
-  # MOSTLY AI SDK
-  "mostlyai[local]>=4.0.0",
-  
-  # Machine learning and evaluation
-  "scikit-learn>=1.3.0",
+  # MOSTLY AI forks
+  "mostlyai-engine @ git+https://github.com/antoinebon/mostlyai-engine.git",
+  "mostlyai @ git+https://github.com/antoinebon/mostlyai.git",
   
   # Configuration management
-  "hydra-core>=1.3.0",
-  "omegaconf>=2.3.0",
+  "hydra-core",
+  "omegaconf",
   "flatten-dict",
   
   # Experiment tracking
-  "mlflow>=2.10.0",
+  "mlflow",
 ]
 dynamic = ["version"]
 
@@ -37,6 +36,9 @@ mostlyai = "mostlyaiprize.cli:main"
 
 [tool.hatch.version]
 source = "vcs"
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/mostlyaiprize"]
