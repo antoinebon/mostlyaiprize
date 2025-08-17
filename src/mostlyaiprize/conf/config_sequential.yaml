@@ -10,7 +10,7 @@ generator_name: "sequential_challenge_generator"
 # Override MLflow experiment name for sequential challenge
 mlflow:
   # experiment_name: "mostlyai_sequential_challenge_dev"
-  experiment_name: "mostlyai_sequential_challenge"
+  experiment_name: "sequential_challenge"
 
 # Data settings
 data:
