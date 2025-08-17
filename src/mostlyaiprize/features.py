@@ -6,6 +6,7 @@ import numpy as np
 import warnings
 from typing import Any
 from scipy.stats import entropy
+from collections import Counter
 
 # Suppress numpy warnings
 warnings.filterwarnings("ignore", category=RuntimeWarning, module="numpy")
@@ -495,4 +496,302 @@ class SubjectTableEngineer:
         return subject_table.to_pandas()
 
 
-__all__ = ["SubjectTableEngineer"]
+
+class DatasetStatisticsEngineer:
+    """Compute comprehensive statistics across entire dataset columns.
+
+    This class computes various statistics for each column in a dataset,
+    resulting in a single row with aggregated metrics for the entire dataset.
+
+    Features Computed:
+    ==================
+
+    Basic Features (always included):
+    - {col}_null_percentage: Percentage of null values
+    - {col}_unique_count: Number of distinct values
+    - {col}_unique_ratio: Ratio of unique values to total rows
+
+    Numerical Features (for numeric columns):
+    - {col}_mean, {col}_std, {col}_min, {col}_max: Standard statistics
+    - {col}_median, {col}_range: Central tendency and spread
+    - {col}_p25, {col}_p75: Percentiles
+    - {col}_cv: Coefficient of variation
+    - {col}_outlier_percentage: Percentage of outliers
+    - {col}_skewness: Distribution skewness
+    - {col}_kurtosis: Distribution kurtosis
+    - {col}_entropy: Information entropy
+
+    Categorical Features (for non-numeric columns):
+    - {col}_most_frequent: Mode value
+    - {col}_mode_percentage: Percentage of most frequent value
+    - {col}_entropy: Information entropy
+
+    Example:
+        >>> data = pd.DataFrame({
+        ...     'value1': [1, 2, 3, 4, 5],
+        ...     'value2': [10, 20, 30, 40, None],
+        ...     'category': ['A', 'B', 'A', 'C', 'A']
+        ... })
+        >>> engineer = DatasetStatisticsEngineer()
+        >>> result = engineer.compute_dataset_statistics(data)
+        >>> # Result contains comprehensive statistics for all columns
+    """
+
+    def __init__(
+        self,
+        enable_distribution: bool = True,
+        enable_entropy: bool = True,
+        enable_advanced: bool = True,
+    ) -> None:
+        """Initialize with feature computation flags.
+
+        Args:
+            enable_distribution: Enable distribution features (percentiles, CV, outliers)
+            enable_entropy: Enable entropy calculations
+            enable_advanced: Enable advanced statistics (skewness, kurtosis)
+        """
+        self._enable_distribution: bool = enable_distribution
+        self._enable_entropy: bool = enable_entropy
+        self._enable_advanced: bool = enable_advanced
+
+    def _compute_basic_statistics(self, df: pl.DataFrame) -> dict[str, Any]:
+        """Compute basic statistics for all columns.
+
+        Args:
+            df: Input dataset
+
+        Returns:
+            Dictionary with basic statistics
+        """
+        stats: dict[str, Any] = {}
+        
+        for col in df.columns:
+            col_data = df[col]
+            total_rows = len(df)
+            
+            # Basic counts
+            stats[f"{col}_null_percentage"] = (col_data.null_count() / total_rows * 100) if total_rows > 0 else 0.0
+            stats[f"{col}_unique_count"] = col_data.n_unique()
+            stats[f"{col}_unique_ratio"] = (col_data.n_unique() / total_rows) if total_rows > 0 else 0.0
+            
+        return stats
+
+    def _compute_numerical_statistics(self, df: pl.DataFrame, col: str) -> dict[str, Any]:
+        """Compute numerical statistics for a single column.
+
+        Args:
+            df: Input dataset
+            col: Column name
+
+        Returns:
+            Dictionary with numerical statistics
+        """
+        stats: dict[str, Any] = {}
+        col_data = df[col].drop_nulls()
+        
+        if col_data.len() == 0:
+            # Handle empty column case
+            nan_val = float('nan')
+            stats.update({
+                f"{col}_mean": nan_val,
+                f"{col}_std": nan_val,
+                f"{col}_min": nan_val,
+                f"{col}_max": nan_val,
+                f"{col}_median": nan_val,
+                f"{col}_range": nan_val,
+            })
+            
+            if self._enable_distribution:
+                stats.update({
+                    f"{col}_p25": nan_val,
+                    f"{col}_p75": nan_val,
+                    f"{col}_cv": nan_val,
+                    f"{col}_outlier_percentage": 0.0,
+                })
+                
+            if self._enable_advanced:
+                stats.update({
+                    f"{col}_skewness": nan_val,
+                    f"{col}_kurtosis": nan_val,
+                })
+                
+            return stats
+
+        # Basic numerical statistics
+        stats[f"{col}_mean"] = col_data.mean()
+        stats[f"{col}_std"] = col_data.std()
+        stats[f"{col}_min"] = col_data.min()
+        stats[f"{col}_max"] = col_data.max()
+        stats[f"{col}_median"] = col_data.median()
+        stats[f"{col}_range"] = col_data.max() - col_data.min()
+
+        if self._enable_distribution:
+            # Distribution statistics
+            stats[f"{col}_p25"] = col_data.quantile(0.25, interpolation="linear")
+            stats[f"{col}_p75"] = col_data.quantile(0.75, interpolation="linear")
+            
+            # Coefficient of variation
+            mean_val = col_data.mean()
+            stats[f"{col}_cv"] = (col_data.std() / mean_val) if mean_val != 0 else 0.0
+            
+            # Outlier detection (values beyond 2 standard deviations)
+            if col_data.std() > 0:
+                outlier_count = self._count_outliers(col_data.to_pandas().values)
+                stats[f"{col}_outlier_percentage"] = (outlier_count / col_data.len() * 100) if col_data.len() > 0 else 0.0
+            else:
+                stats[f"{col}_outlier_percentage"] = 0.0
+
+        if self._enable_advanced:
+            # Advanced statistics using pandas for skewness/kurtosis
+            pandas_series = col_data.to_pandas()
+            if len(pandas_series) > 1:
+                stats[f"{col}_skewness"] = float(pandas_series.skew())
+                stats[f"{col}_kurtosis"] = float(pandas_series.kurtosis())
+            else:
+                stats[f"{col}_skewness"] = 0.0
+                stats[f"{col}_kurtosis"] = 0.0
+
+        return stats
+
+    def _compute_categorical_statistics(self, df: pl.DataFrame, col: str) -> dict[str, Any]:
+        """Compute categorical statistics for a single column.
+
+        Args:
+            df: Input dataset
+            col: Column name
+
+        Returns:
+            Dictionary with categorical statistics
+        """
+        stats: dict[str, Any] = {}
+        col_data = df[col].drop_nulls()
+        
+        if col_data.len() == 0:
+            stats.update({
+                f"{col}_most_frequent": None,
+                f"{col}_mode_percentage": 0.0,
+            })
+            return stats
+
+        # Mode and frequency
+        mode_result = col_data.mode()
+        if mode_result.len() > 0:
+            most_frequent = mode_result.first()
+            mode_frequency = (col_data == most_frequent).sum()
+            stats[f"{col}_most_frequent"] = most_frequent
+            stats[f"{col}_mode_percentage"] = (mode_frequency / col_data.len() * 100) if col_data.len() > 0 else 0.0
+        else:
+            stats[f"{col}_most_frequent"] = None
+            stats[f"{col}_mode_percentage"] = 0.0
+
+        return stats
+
+    def _compute_entropy_statistics(self, df: pl.DataFrame, col: str) -> dict[str, Any]:
+        """Compute entropy statistics for a single column.
+
+        Args:
+            df: Input dataset
+            col: Column name
+
+        Returns:
+            Dictionary with entropy statistics
+        """
+        if not self._enable_entropy:
+            return {}
+
+        stats: dict[str, Any] = {}
+        col_data = df[col].drop_nulls()
+        
+        if col_data.len() == 0:
+            stats[f"{col}_entropy"] = 0.0
+            return stats
+
+        # Compute entropy
+        values = col_data.to_pandas().tolist()
+        value_counts = Counter(values)
+        probs = np.array(list(value_counts.values())) / len(values)
+        stats[f"{col}_entropy"] = float(entropy(probs, base=2))
+
+        return stats
+
+    def _count_outliers(self, values: np.ndarray) -> int:
+        """Count outliers using 2 standard deviation rule.
+
+        Args:
+            values: Array of numerical values
+
+        Returns:
+            Count of outliers
+        """
+        if len(values) <= 1:
+            return 0
+            
+        mean_val = np.mean(values)
+        std_val = np.std(values)
+        
+        if std_val == 0:
+            return 0
+            
+        z_scores = np.abs((values - mean_val) / std_val)
+        return int(np.sum(z_scores > 2))
+
+    def compute_dataset_statistics(self, data: pd.DataFrame | pl.DataFrame, id_col: str | None = None) -> pd.DataFrame:
+        """Compute comprehensive dataset statistics.
+
+        Args:
+            data: Input dataset (Pandas or Polars DataFrame)
+
+        Returns:
+            Single-row DataFrame with statistics for all columns
+        """
+        # Convert to Polars if needed
+        if isinstance(data, pd.DataFrame):
+            df = pl.from_pandas(data)
+        else:
+            df = data
+
+        if id_col:
+            id_df = df[[id_col]].unique()
+            df = df.drop(id_col)
+
+        # Initialize statistics dictionary
+        all_stats: dict[str, Any] = {}
+
+        # Compute basic statistics for all columns
+        basic_stats = self._compute_basic_statistics(df)
+        all_stats.update(basic_stats)
+
+        # Get column types
+        numerical_cols = [
+            col for col, dtype in df.schema.items() if dtype.is_numeric()
+        ]
+        categorical_cols = [
+            col for col, dtype in df.schema.items() if not dtype.is_numeric()
+        ]
+
+        # Compute numerical statistics
+        for col in numerical_cols:
+            numerical_stats = self._compute_numerical_statistics(df, col)
+            all_stats.update(numerical_stats)
+            
+            # Add entropy for numerical columns
+            entropy_stats = self._compute_entropy_statistics(df, col)
+            all_stats.update(entropy_stats)
+
+        # Compute categorical statistics
+        for col in categorical_cols:
+            categorical_stats = self._compute_categorical_statistics(df, col)
+            all_stats.update(categorical_stats)
+            
+            # Add entropy for categorical columns
+            entropy_stats = self._compute_entropy_statistics(df, col)
+            all_stats.update(entropy_stats)
+
+        # Convert to single-row DataFrame and return as Pandas
+        stats_df = pl.DataFrame([all_stats])
+
+        base_df = id_df if id_col else df
+        result_df = base_df.with_columns([pl.lit(value).alias(name) for name, value in stats_df.row(0, named=True).items()])
+        return result_df.to_pandas()
+
+

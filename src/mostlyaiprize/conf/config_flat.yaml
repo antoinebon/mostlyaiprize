@@ -21,7 +21,7 @@ tables:
   - name: flat_data
     tabular_model_configuration:
       # Core Configuration
-      model: "MOSTLY_AI/Large"
+      model: "MOSTLY_AI/Medium"
       max_epochs: 400
       max_training_time: 300  # 5 hours
       max_sample_size: null
@@ -32,10 +32,10 @@ tables:
       use_mixed_precision: false
       
       # Tighter gradient clipping for stability
-      gradient_clip_norm: null
+      gradient_clip_norm: 1
       
       # Learning rate auto-determined by heuristic for optimal convergence
-      learning_rate: 0.01
+      learning_rate: 0.003
       
       # Warmup + Cosine scheduler with longer warmup for stability
       # scheduler_type: "warmup_cosine"
@@ -46,8 +46,8 @@ tables:
       
       # Conservative regularization for better generalization
       # weight_decay: 0
-      weight_decay: 0.01
-      weight_decay_end: 0.01  # Automatically computed as weight_decay * 0.1 if not specified
+      weight_decay: 0.001
+      weight_decay_end: 0.001  # Automatically computed as weight_decay * 0.1 if not specified
       
       # More aggressive label smoothing for high precision
       label_smoothing: 0.0
@@ -71,9 +71,9 @@ tables:
       rare_category_replacement_method: null
       
       # Advanced batch configuration
-      batch_size: 256
+      batch_size: 64
       gradient_accumulation_steps: null  # Auto-determined
 
       # dropout
-      dnn_dropout: 0.1
+      dnn_dropout: 0.2
       lstm_dropout: 0

@@ -25,7 +25,7 @@ tables:
     primary_key: ${data.subject_column}
     tabular_model_configuration:
       model: "MOSTLY_AI/Small"
-      max_epochs: 100
+      max_epochs: 1
       max_training_time: 360  # 6 hours
       max_sample_size: null
       enable_flexible_generation: false
@@ -60,7 +60,7 @@ tables:
       ema_decay: 0.99      
 
       # Enhanced early stopping with more patience for convergence
-      early_stopping_patience: 400
+      early_stopping_patience: 2
       early_stopping_min_delta: 0.0001
       
       # Focal loss disabled (only enable for severe class imbalance)
@@ -83,10 +83,10 @@ tables:
         is_context: true
     tabular_model_configuration:
       model: "MOSTLY_AI/Small"
-      max_epochs: 100
+      max_epochs: 500
       max_training_time: 360  # 6 hours
       # max_sample_size: 1000
-      max_sequence_window: 15
+      max_sequence_window: 10
       enable_flexible_generation: false
       
       # Mixed precision disabled for maximum numerical precision
@@ -96,13 +96,13 @@ tables:
       gradient_clip_norm: 1
       
       # Learning rate
-      learning_rate: 0.001
+      learning_rate: 0.003
       
       # Warmup + Cosine scheduler with longer warmup for stability
       # scheduler_type: "warmup_cosine"
-      # scheduler_type: "plateau"
-      scheduler_type: "one_cycle"
-      warmup_epochs: 10
+      scheduler_type: "plateau"
+      # scheduler_type: "one_cycle"
+      warmup_epochs: 5
       min_lr_ratio: 0.0001
       
       # Conservative regularization for better generalization
@@ -132,7 +132,7 @@ tables:
       rare_category_replacement_method: CONSTANT
       
       # Batch configuration
-      batch_size: 64
+      batch_size: 16
       gradient_accumulation_steps: null 
 
       dnn_dropout: 0.1

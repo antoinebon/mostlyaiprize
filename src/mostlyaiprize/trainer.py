@@ -20,7 +20,7 @@ from mostlyai.sdk.domain import (
 )
 
 from .report_parser import ReportParser
-from .features import SubjectTableEngineer
+from .features import SubjectTableEngineer, DatasetStatisticsEngineer
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +91,7 @@ class Trainer:
             table_dict = OmegaConf.to_container(table_config, resolve=True)
 
             # Handle sequential data tables
-            if self._challenge_type == "sequential" and  table_config.name == "subjects":
+            if self._challenge_type == "sequential" and table_config.name == "subjects":
                 # Create engineer with configuration-driven parameters
                 feature_config =self._config.get("subjects_feature_engineering") 
                 if feature_config:
@@ -108,6 +108,7 @@ class Trainer:
                     logger.info(f"📊 Subject table engineering completed - {data.shape[1]} features created")
                 else:
                     table_dict["data"] = data[[self._config.data.subject_column]].drop_duplicates()
+                # table_dict["data"] = DatasetStatisticsEngineer().compute_dataset_statistics(data, id_col = self._config.data.subject_column)
             else:
                 table_dict["data"] = data
 
