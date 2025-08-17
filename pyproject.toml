@@ -28,6 +28,8 @@ dependencies = [
   
   # Experiment tracking
   "mlflow",
+  "scipy",
+  "beautifulsoup4",
 ]
 dynamic = ["version"]
 

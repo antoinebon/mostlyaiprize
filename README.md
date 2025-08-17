@@ -9,11 +9,11 @@ This repository contains our submission for the [MOSTLY AI Prize](https://www.mo
 ## Quick Start
 
 ```bash
-# Install the package in a virtual env...
-pip install -e .
-
-# or use hatch to create one
+# Setup virtual env with dependencies
 hatch shell
+
+# Install the package in the virtual env
+pip install -e .
 
 # Train and generate sequences for sequential data challenge
 mostlyai --config-name=config_flat
@@ -30,23 +30,24 @@ Configuration can be overriden by creating a new config file under `src/mostlyai
 ## Experiment Tracking
 
 Mlflow is used to track the following data:
-* Configuration parameters
-* Evaluation metrics
-* System metrics
+* Configuration parameters (hydra config)
+* Evaluation metrics (from qa report)
+* System metrics (cpu usage, ...)
 * Generated sequences
-* MostlyAI QA reports
+* MostlyAI QA reports (html)
 
 
 ## Development Setup
 
 ```bash
-# Install with development dependencies
-pip install -e ".[dev]"
+# Run tests
+hatch run dev:test
 
-# Set up pre-commit hooks
-hatch run dev:setup-hooks
+# Format code
+hatch run dev:format
 
 # Run all quality checks
-hatch run dev:all
+hatch run dev:lint
+hatch run dev:typecheck
 ```
 
